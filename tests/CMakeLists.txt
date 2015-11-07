@@ -9,27 +9,27 @@ include_directories(
 	${GMOCK_INCLUDE_DIR}
 )
 
-# Custom target to generate the coverage information
-add_custom_target(generate-coverage-information
-	COMMAND lcov --directory ${PROJECT_BINARY_DIR} --capture --output-file ${PROJECT_BINARY_DIR}/coverage.info
+# Custom target to generate, merge, and filter coverage reports after the test.
+add_custom_target(coverage
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+	COMMAND lcov -c -d . -o tested.info
+	COMMAND lcov -a baseline.info -a tested.info -o coverage.info
+	COMMAND lcov --remove coverage.info 'tests/*' '/usr/*' -o coverage.info
+	COMMAND lcov --list coverage.info
 	DEPENDS test
 )
 
-# Custom target to filter the coverage information to only relevant files
-add_custom_target(filter-coverage-information
-	COMMAND lcov --remove ${PROJECT_BINARY_DIR}/coverage.info 'tests/*' '/usr/*' --output-file ${PROJECT_BINARY_DIR}/coverage.info
-	DEPENDS generate-coverage-information
-)
-
-# Custom target to actually display the coverage information
-add_custom_target(coverage
-	COMMAND lcov --list ${PROJECT_BINARY_DIR}/coverage.info
-	DEPENDS filter-coverage-information
+# Custom target to generate an empty initial coverage report so we get uncovered files.
+# Add new test targets onto the DEPENDS.
+add_custom_target(pre-test
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+	COMMAND lcov -c -i -d . -o baseline.info
+	DEPENDS overpass overpassd run-unit-tests
 )
 
 # Custom target to run tests
 add_custom_target(test
-	DEPENDS run-unit-tests
+	DEPENDS pre-test
 )
 
 add_subdirectory(unit)

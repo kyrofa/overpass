@@ -7,6 +7,7 @@
 #include <boost/program_options.hpp>
 
 #include "include/version.h"
+#include "include/udp_server.h"
 #include "include/virtual_interface.h"
 
 void callback(std::shared_ptr<std::vector<boost::uint8_t> > buffer)
@@ -74,8 +75,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	std::shared_ptr<boost::asio::io_service> ioService(new boost::asio::io_service);
+	UdpServer server(ioService, "11.11.11.1", 4200, callback);
+	std::thread thread([ioService](){ioService->run();});
+
 	int val;
 	std::cin >> val;
+
+	ioService->stop();
+	thread.join();
 
 	return 0;
 }

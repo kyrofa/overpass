@@ -21,10 +21,12 @@ find_package(Boost REQUIRED COMPONENTS
 include_directories(${Boost_INCLUDE_DIRS})
 
 set(OVERPASS_HEADERS
+	${PROJECT_SOURCE_DIR}/include/udp_server.h
 	${PROJECT_SOURCE_DIR}/include/virtual_interface.h
 )
 
 set(OVERPASS_SOURCES
+	${PROJECT_SOURCE_DIR}/src/udp_server.cpp
 	${PROJECT_SOURCE_DIR}/src/virtual_interface.cpp
 	${PROJECT_SOURCE_DIR}/src/main.cpp
 )

@@ -29,7 +29,7 @@ bool createVirtualInterface(std::string &interfaceName,
 	ifreq request;
 	memset(&request, 0, sizeof(request));
 
-	request.ifr_flags = IFF_TAP; // Creating a TAP device, full ethernet frames
+	request.ifr_flags = IFF_TUN; // Creating a TAP device, full ethernet frames
 
 	// Tell it what name we'd like (or template to satisfy)
 	interfaceName.copy(request.ifr_name, IFNAMSIZ);

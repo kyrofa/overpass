@@ -8,6 +8,7 @@
 
 #include "include/version.h"
 #include "include/virtual_interface.h"
+#include "include/tunnel.h"
 
 void callback(std::shared_ptr<std::vector<boost::uint8_t> > buffer)
 {
@@ -75,8 +76,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	Tunnel tunnel(interfaceFileDescriptor);
+	tunnel.start();
+
 	int val;
 	std::cin >> val;
+
+	tunnel.stop();
 
 	return 0;
 }

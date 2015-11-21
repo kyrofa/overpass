@@ -29,7 +29,9 @@ bool createVirtualInterface(std::string &interfaceName,
 	ifreq request;
 	memset(&request, 0, sizeof(request));
 
-	request.ifr_flags = IFF_TUN; // Creating a TAP device, full ethernet frames
+	// Create a TUN device = layer-3 IP packets (not layer 2). Also, tell the
+	// kernel not to include the extra packet info (flags and protocol).
+	request.ifr_flags = IFF_TUN | IFF_NO_PI;
 
 	// Tell it what name we'd like (or template to satisfy)
 	interfaceName.copy(request.ifr_name, IFNAMSIZ);

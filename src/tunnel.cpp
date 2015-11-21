@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <iostream>
+#include <bitset>
 
+#include "include/ip_packet.h"
 #include "include/udp_packet.h"
 #include "include/tunnel.h"
 
@@ -58,10 +60,24 @@ void Tunnel::readFromTunnel()
 
 	std::size_t bytesRead = read(m_fileDescriptor, buffer, BUFFER_SIZE);
 
-	UdpPacket packet(std::vector<uint8_t>(buffer, buffer+bytesRead));
+//	for (int i = 0; i < bytesRead; i+=5)
+//	{
+//		for (int j = 0; j < 5; ++j)
+//		{
+//			std::cout << static_cast<std::bitset<8> >(buffer[i+j]) << "(" << std::hex << (int) buffer[i+j] << ") ";
+//		}
+//		std::cout << std::endl;
+//	}
+
+	IpPacket packet(std::vector<uint8_t>(buffer, buffer+bytesRead));
 
 	std::string packetString;
 	packet.toString(packetString);
+	std::cout << packetString << std::endl;
+
+	UdpPacket udpPacket(packet.payload());
+
+	udpPacket.toString(packetString);
 	std::cout << packetString << std::endl;
 
 	m_ioService->post(std::bind(&Tunnel::readFromTunnel, this));

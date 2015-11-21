@@ -1,8 +1,6 @@
 #include <stdexcept>
 #include <sstream>
 
-#include <boost/asio/detail/socket_ops.hpp>
-
 #include "include/ip_packet.h"
 
 namespace
@@ -29,9 +27,6 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 
 	// Parse the buffer into an IP packet.
 
-	using boost::asio::detail::socket_ops::network_to_host_short;
-	using boost::asio::detail::socket_ops::network_to_host_long;
-
 	// Parse version, bits 0-3
 	m_version = buffer[0] >> 4;
 
@@ -39,13 +34,13 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 	m_internetHeaderLength = buffer[0] & 0x0f;
 
 	// Parse differentiated services code point, bits 8-13
-	m_differentiatedServicesCodePoint = network_to_host_short(buffer[1] >> 2);
+	m_differentiatedServicesCodePoint = buffer[1] >> 2;
 
 	// Parse explicit congestion notification, bits 14-15
 	m_explicitCongestionNotification = buffer[1] & 0x03;
 
 	// Parse packet length, bits 16-31
-	m_packetLength = network_to_host_short((buffer[2] << 8) | buffer[3]);
+	m_packetLength = (buffer[2] << 8) | buffer[3];
 	if (bufferSize != m_packetLength)
 	{
 		std::stringstream stream;
@@ -55,13 +50,13 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 	}
 
 	// Parse identification, bits 32-47
-	m_identification = network_to_host_short((buffer[4] << 8) | buffer[5]);
+	m_identification = (buffer[4] << 8) | buffer[5];
 
 	// Parse flags, bits 48-50
-	m_flags = buffer[6] >> 13;
+	m_flags = buffer[6] >> 5;
 
 	// Parse fragment offset, bits 51-63
-	m_fragmentOffset = network_to_host_short(((buffer[6] & 0x1f) << 8) | buffer[7]);
+	m_fragmentOffset = ((buffer[6] & 0x1f) << 8) | buffer[7];
 
 	// Parse time to live, bits 64-71
 	m_timeToLive = buffer[8];
@@ -70,19 +65,15 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 	m_protocol = buffer[9];
 
 	// Parse header checksum, bits 80-95
-	m_headerChecksum = network_to_host_short((buffer[10] << 8) | buffer[11]);
+	m_headerChecksum = (buffer[10] << 8) | buffer[11];
 
 	// Parse source IP address, bits 96-127
-	m_sourceIpAddress = network_to_host_long((buffer[12] << 24) |
-											 (buffer[13] << 16) |
-											 (buffer[14] << 8) |
-											 (buffer[15] & 0x000000ff));
+	m_sourceIpAddress = (buffer[12] << 24) | (buffer[13] << 16) |
+						(buffer[14] << 8) | (buffer[15] & 0x000000ff);
 
 	// Parse destination IP address, bits 128-159
-	m_destinationIpAddress = network_to_host_long((buffer[16] << 24) |
-							 (buffer[17] << 16) |
-							 (buffer[18] << 8) |
-							 (buffer[19] & 0x000000ff));
+	m_destinationIpAddress = (buffer[16] << 24) | (buffer[17] << 16) |
+							 (buffer[18] << 8) | (buffer[19] & 0x000000ff);
 
 	// Parse any options, starting at byte 160. Calculate the number of bytes in
 	// the options. This is calculated using the internet header length, which
@@ -112,21 +103,36 @@ void IpPacket::toBuffer(std::vector<uint8_t> &buffer) const
 
 void IpPacket::toString(std::string &packetString) const
 {
+	auto sourceIp = sourceIpAddress();
+	std::stringstream sourceIpAddressStream;
+	sourceIpAddressStream << ((sourceIp & 0xff000000) >> 24) << ".";
+	sourceIpAddressStream << ((sourceIp & 0x00ff0000) >> 16) << ".";
+	sourceIpAddressStream << ((sourceIp & 0x0000ff00) >> 8) << ".";
+	sourceIpAddressStream << (sourceIp & 0x000000ff);
+
+	auto destinationIp = destinationIpAddress();
+	std::stringstream destinationIpAddressStream;
+	destinationIpAddressStream << ((destinationIp & 0xff000000) >> 24) << ".";
+	destinationIpAddressStream << ((destinationIp & 0x00ff0000) >> 16) << ".";
+	destinationIpAddressStream << ((destinationIp & 0x0000ff00) >> 8) << ".";
+	destinationIpAddressStream << (destinationIp & 0x000000ff);
+
 	std::stringstream stream;
+
 	stream << "[IP PACKET]" << std::endl;
-	stream << "Version:\t" << version() << std::endl;
-	stream << "IHL:\t" << internetHeaderLength() << std::endl;
-	stream << "DSCP:\t" << differentiatedServicesCodePoint() << std::endl;
-	stream << "ECN:\t" << explicitCongestionNotification() << std::endl;
-	stream << "Length:\t" << packetLength() << std::endl;
-	stream << "ID:\t" << identification() << std::endl;
-	stream << "Flags:\t" << flags() << std::endl;
-	stream << "Fragment offset:\t" << fragmentOffset() << std::endl;
-	stream << "TTL:\t" << timeToLive() << std::endl;
-	stream << "Protocol:\t" << protocol() << std::endl;
-	stream << "Checksum:\t" << headerChecksum() << std::endl;
-	stream << "Source IP:\t" << sourceIpAddress() << std::endl;
-	stream << "Destination IP:\t" << destinationIpAddress() << std::endl;
+	stream << "Version:\t" << static_cast<int>(version()) << std::endl;
+	stream << "IHL:\t" << static_cast<int>(internetHeaderLength()) << std::endl;
+	stream << "DSCP:\t" << static_cast<int>(differentiatedServicesCodePoint()) << std::endl;
+	stream << "ECN:\t" << static_cast<int>(explicitCongestionNotification()) << std::endl;
+	stream << "Length:\t" << static_cast<int>(packetLength()) << std::endl;
+	stream << "ID:\t" << static_cast<int>(identification()) << std::endl;
+	stream << "Flags:\t" << static_cast<int>(flags()) << std::endl;
+	stream << "Fragment offset:\t" << static_cast<int>(fragmentOffset()) << std::endl;
+	stream << "TTL:\t" << static_cast<int>(timeToLive()) << std::endl;
+	stream << "Protocol:\t" << static_cast<int>(protocol()) << std::endl;
+	stream << "Checksum:\t" << static_cast<int>(headerChecksum()) << std::endl;
+	stream << "Source IP:\t" << sourceIpAddressStream.str() << std::endl;
+	stream << "Destination IP:\t" << destinationIpAddressStream.str() << std::endl;
 
 	packetString = stream.str();
 }

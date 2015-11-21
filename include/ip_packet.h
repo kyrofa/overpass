@@ -1,5 +1,5 @@
-#ifndef UDP_PACKET_H
-#define UDP_PACKET_H
+#ifndef IP_PACKET_H
+#define IP_PACKET_H
 
 #include <cstdint>
 #include <vector>
@@ -58,4 +58,4 @@ class IpPacket
 		std::vector<uint8_t> m_payload; // End of options and on
 };
 
-#endif // UDP_PACKET_H
+#endif // IP_PACKET_H

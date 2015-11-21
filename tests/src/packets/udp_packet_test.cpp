@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <boost/asio/detail/socket_ops.hpp>
-
 #include "include/udp_packet.h"
 
 // Verify that parsing a UDP packet from a buffer works as expected.
@@ -12,24 +10,18 @@ TEST(UdpPacket, Parse)
 	uint16_t packetLength = 8; // Bits 32-47
 	uint16_t checksum = 3; // Bits 48-63
 
-	using boost::asio::detail::socket_ops::host_to_network_short;
-	auto networkSourcePort = host_to_network_short(sourcePort);
-	auto networkdestinationPort = host_to_network_short(destinationPort);
-	auto networkpacketLength = host_to_network_short(packetLength);
-	auto networkSchecksum = host_to_network_short(checksum);
-
 	std::vector<uint8_t> buffer = {
-		static_cast<uint8_t>(networkSourcePort >> 8),
-		static_cast<uint8_t>(networkSourcePort & 0x0f),
+		static_cast<uint8_t>(sourcePort >> 8),
+		static_cast<uint8_t>(sourcePort & 0x0f),
 
-		static_cast<uint8_t>(networkdestinationPort >> 8),
-		static_cast<uint8_t>(networkdestinationPort & 0x0f),
+		static_cast<uint8_t>(destinationPort >> 8),
+		static_cast<uint8_t>(destinationPort & 0x0f),
 
-		static_cast<uint8_t>(networkpacketLength >> 8),
-		static_cast<uint8_t>(networkpacketLength & 0x0f),
+		static_cast<uint8_t>(packetLength >> 8),
+		static_cast<uint8_t>(packetLength & 0x0f),
 
-		static_cast<uint8_t>(networkSchecksum >> 8),
-		static_cast<uint8_t>(networkSchecksum & 0x0f),
+		static_cast<uint8_t>(checksum >> 8),
+		static_cast<uint8_t>(checksum & 0x0f),
 	};
 
 	UdpPacket packet(buffer);
@@ -58,24 +50,18 @@ TEST(UdpPacket, ParseStatedLengthTooShort)
 	uint16_t packetLength = 7; // Bits 32-47
 	uint16_t checksum = 3; // Bits 48-63
 
-	using boost::asio::detail::socket_ops::host_to_network_short;
-	auto networkSourcePort = host_to_network_short(sourcePort);
-	auto networkdestinationPort = host_to_network_short(destinationPort);
-	auto networkpacketLength = host_to_network_short(packetLength);
-	auto networkSchecksum = host_to_network_short(checksum);
-
 	std::vector<uint8_t> buffer = {
-		static_cast<uint8_t>(networkSourcePort >> 8),
-		static_cast<uint8_t>(networkSourcePort & 0x0f),
+		static_cast<uint8_t>(sourcePort >> 8),
+		static_cast<uint8_t>(sourcePort & 0x0f),
 
-		static_cast<uint8_t>(networkdestinationPort >> 8),
-		static_cast<uint8_t>(networkdestinationPort & 0x0f),
+		static_cast<uint8_t>(destinationPort >> 8),
+		static_cast<uint8_t>(destinationPort & 0x0f),
 
-		static_cast<uint8_t>(networkpacketLength >> 8),
-		static_cast<uint8_t>(networkpacketLength & 0x0f),
+		static_cast<uint8_t>(packetLength >> 8),
+		static_cast<uint8_t>(packetLength & 0x0f),
 
-		static_cast<uint8_t>(networkSchecksum >> 8),
-		static_cast<uint8_t>(networkSchecksum & 0x0f),
+		static_cast<uint8_t>(checksum >> 8),
+		static_cast<uint8_t>(checksum & 0x0f),
 	};
 
 	EXPECT_THROW(UdpPacket packet(buffer), std::length_error);
@@ -90,24 +76,18 @@ TEST(UdpPacket, ParseStatedLengthTooLong)
 	uint16_t packetLength = 9; // Bits 32-47
 	uint16_t checksum = 3; // Bits 48-63
 
-	using boost::asio::detail::socket_ops::host_to_network_short;
-	auto networkSourcePort = host_to_network_short(sourcePort);
-	auto networkdestinationPort = host_to_network_short(destinationPort);
-	auto networkpacketLength = host_to_network_short(packetLength);
-	auto networkSchecksum = host_to_network_short(checksum);
-
 	std::vector<uint8_t> buffer = {
-		static_cast<uint8_t>(networkSourcePort >> 8),
-		static_cast<uint8_t>(networkSourcePort & 0x0f),
+		static_cast<uint8_t>(sourcePort >> 8),
+		static_cast<uint8_t>(sourcePort & 0x0f),
 
-		static_cast<uint8_t>(networkdestinationPort >> 8),
-		static_cast<uint8_t>(networkdestinationPort & 0x0f),
+		static_cast<uint8_t>(destinationPort >> 8),
+		static_cast<uint8_t>(destinationPort & 0x0f),
 
-		static_cast<uint8_t>(networkpacketLength >> 8),
-		static_cast<uint8_t>(networkpacketLength & 0x0f),
+		static_cast<uint8_t>(packetLength >> 8),
+		static_cast<uint8_t>(packetLength & 0x0f),
 
-		static_cast<uint8_t>(networkSchecksum >> 8),
-		static_cast<uint8_t>(networkSchecksum & 0x0f),
+		static_cast<uint8_t>(checksum >> 8),
+		static_cast<uint8_t>(checksum & 0x0f),
 	};
 
 	EXPECT_THROW(UdpPacket packet(buffer), std::length_error);

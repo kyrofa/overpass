@@ -1,8 +1,6 @@
 #include <stdexcept>
 #include <sstream>
 
-#include <boost/asio/detail/socket_ops.hpp>
-
 #include "include/udp_packet.h"
 
 namespace
@@ -39,16 +37,14 @@ UdpPacket::UdpPacket(const std::vector<uint8_t> &buffer)
 	 * Bits 64 on: Payload
 	 */
 
-	using boost::asio::detail::socket_ops::network_to_host_short;
-
 	// Parse source port, bytes 0-1.
-	m_sourcePort = network_to_host_short((buffer[0] << 8) | buffer[1]);
+	m_sourcePort = (buffer[0] << 8) | buffer[1];
 
 	// Parse destination port, bytes 2-3.
-	m_destinationPort = network_to_host_short((buffer[2] << 8) | buffer[3]);
+	m_destinationPort = (buffer[2] << 8) | buffer[3];
 
 	// Parse packet length, bytes 4-5.
-	m_packetLength = network_to_host_short((buffer[4] << 8) | buffer[5]);
+	m_packetLength = (buffer[4] << 8) | buffer[5];
 	if (bufferSize != m_packetLength)
 	{
 		std::stringstream stream;
@@ -58,7 +54,7 @@ UdpPacket::UdpPacket(const std::vector<uint8_t> &buffer)
 	}
 
 	// Parse checksum, bytes 6-7.
-	m_checksum = network_to_host_short((buffer[6] << 8) | buffer[7]);
+	m_checksum = (buffer[6] << 8) | buffer[7];
 
 	// Parse payload, bytes 8 and on.
 	m_payload.assign(buffer.cbegin()+8, buffer.cend());
@@ -66,25 +62,18 @@ UdpPacket::UdpPacket(const std::vector<uint8_t> &buffer)
 
 void UdpPacket::toBuffer(std::vector<uint8_t> &buffer) const
 {
-	using boost::asio::detail::socket_ops::host_to_network_short;
-
-	auto networkSourcePort = host_to_network_short(m_sourcePort);
-	auto networkdestinationPort = host_to_network_short(m_destinationPort);
-	auto networkpacketLength = host_to_network_short(m_packetLength);
-	auto networkSchecksum = host_to_network_short(m_checksum);
-
 	buffer = {
-		static_cast<uint8_t>(networkSourcePort >> 8),
-		static_cast<uint8_t>(networkSourcePort & 0x0f),
+		static_cast<uint8_t>(sourcePort() >> 8),
+		static_cast<uint8_t>(sourcePort() & 0x0f),
 
-		static_cast<uint8_t>(networkdestinationPort >> 8),
-		static_cast<uint8_t>(networkdestinationPort & 0x0f),
+		static_cast<uint8_t>(destinationPort() >> 8),
+		static_cast<uint8_t>(destinationPort() & 0x0f),
 
-		static_cast<uint8_t>(networkpacketLength >> 8),
-		static_cast<uint8_t>(networkpacketLength & 0x0f),
+		static_cast<uint8_t>(packetLength() >> 8),
+		static_cast<uint8_t>(packetLength() & 0x0f),
 
-		static_cast<uint8_t>(networkSchecksum >> 8),
-		static_cast<uint8_t>(networkSchecksum & 0x0f),
+		static_cast<uint8_t>(checksum() >> 8),
+		static_cast<uint8_t>(checksum() & 0x0f),
 	};
 
 	buffer.insert(buffer.end(), m_payload.begin(), m_payload.end());

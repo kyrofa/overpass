@@ -5,14 +5,29 @@
 
 #include "include/udp_packet.h"
 
+namespace
+{
+	const int UDP_HEADER_SIZE = 8;
+}
+
+UdpPacket::UdpPacket(uint16_t sourcePort, uint16_t destinationPort,
+					 const std::vector<uint8_t> &payload) :
+	m_sourcePort(sourcePort),
+	m_destinationPort(destinationPort),
+	m_checksum(0),
+	m_payload(payload)
+{
+	m_packetLength = UDP_HEADER_SIZE + m_payload.size();
+}
+
 UdpPacket::UdpPacket(const std::vector<uint8_t> &buffer)
 {
 	auto bufferSize = buffer.size();
-	if (bufferSize < 8)
+	if (bufferSize < UDP_HEADER_SIZE)
 	{
 		std::stringstream stream;
-		stream << "UDP header is 8 bytes, but buffer is only "
-			   << bufferSize << " bytes";
+		stream << "UDP header is " << UDP_HEADER_SIZE << " bytes, but buffer "
+			   << "is only " << bufferSize << " bytes";
 		throw std::length_error(stream.str());
 	}
 
@@ -47,6 +62,44 @@ UdpPacket::UdpPacket(const std::vector<uint8_t> &buffer)
 
 	// Parse payload, bytes 8 and on.
 	m_payload.assign(buffer.cbegin()+8, buffer.cend());
+}
+
+void UdpPacket::toBuffer(std::vector<uint8_t> &buffer) const
+{
+	using boost::asio::detail::socket_ops::host_to_network_short;
+
+	auto networkSourcePort = host_to_network_short(m_sourcePort);
+	auto networkdestinationPort = host_to_network_short(m_destinationPort);
+	auto networkpacketLength = host_to_network_short(m_packetLength);
+	auto networkSchecksum = host_to_network_short(m_checksum);
+
+	buffer = {
+		static_cast<uint8_t>(networkSourcePort >> 8),
+		static_cast<uint8_t>(networkSourcePort & 0x0f),
+
+		static_cast<uint8_t>(networkdestinationPort >> 8),
+		static_cast<uint8_t>(networkdestinationPort & 0x0f),
+
+		static_cast<uint8_t>(networkpacketLength >> 8),
+		static_cast<uint8_t>(networkpacketLength & 0x0f),
+
+		static_cast<uint8_t>(networkSchecksum >> 8),
+		static_cast<uint8_t>(networkSchecksum & 0x0f),
+	};
+
+	buffer.insert(buffer.end(), m_payload.begin(), m_payload.end());
+}
+
+void UdpPacket::toString(std::string &packetString) const
+{
+	std::stringstream stream;
+	stream << "[UDP PACKET]" << std::endl;
+	stream << "Source port:\t" << sourcePort() << std::endl;
+	stream << "Destination port:\t" << destinationPort() << std::endl;
+	stream << "Packet length:\t" << packetLength() << std::endl;
+	stream << "Checksum:\t" << checksum() << std::endl;
+
+	packetString = stream.str();
 }
 
 uint16_t UdpPacket::sourcePort() const

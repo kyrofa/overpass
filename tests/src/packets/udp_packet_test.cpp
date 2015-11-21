@@ -34,10 +34,10 @@ TEST(UdpPacket, Parse)
 
 	UdpPacket packet(buffer);
 
-	ASSERT_EQ(sourcePort, packet.sourcePort());
-	ASSERT_EQ(destinationPort, packet.destinationPort());
-	ASSERT_EQ(packetLength, packet.packetLength());
-	ASSERT_EQ(checksum, packet.checksum());
+	EXPECT_EQ(sourcePort, packet.sourcePort());
+	EXPECT_EQ(destinationPort, packet.destinationPort());
+	EXPECT_EQ(packetLength, packet.packetLength());
+	EXPECT_EQ(checksum, packet.checksum());
 }
 
 // Verify that an exception is thrown if the buffer is too short to hold the
@@ -78,7 +78,7 @@ TEST(UdpPacket, ParseStatedLengthTooShort)
 		static_cast<uint8_t>(networkSchecksum & 0x0f),
 	};
 
-	ASSERT_THROW(UdpPacket packet(buffer), std::length_error);
+	EXPECT_THROW(UdpPacket packet(buffer), std::length_error);
 }
 
 // Verify that an exception is thrown if the packet size is longer than the
@@ -110,5 +110,26 @@ TEST(UdpPacket, ParseStatedLengthTooLong)
 		static_cast<uint8_t>(networkSchecksum & 0x0f),
 	};
 
-	ASSERT_THROW(UdpPacket packet(buffer), std::length_error);
+	EXPECT_THROW(UdpPacket packet(buffer), std::length_error);
+}
+
+// Test that toBuffer() works as expected by creating a packet from the buffer
+// again.
+TEST(UdpPacket, ToBufferAndBack)
+{
+	uint16_t sourcePort = 1;
+	uint16_t destinationPort = 2;
+	std::vector<uint8_t> payload{3, 4, 5};
+
+	UdpPacket initialPacket(sourcePort, destinationPort, payload);
+
+	std::vector<uint8_t> buffer;
+	initialPacket.toBuffer(buffer);
+	UdpPacket packet(buffer);
+
+	EXPECT_EQ(sourcePort, packet.sourcePort());
+	EXPECT_EQ(destinationPort, packet.destinationPort());
+	EXPECT_EQ(11, packet.packetLength());
+	EXPECT_EQ(0, packet.checksum()); // 0 for now
+	EXPECT_EQ(payload, packet.payload());
 }

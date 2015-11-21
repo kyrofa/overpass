@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include "include/udp_packet.h"
 #include "include/tunnel.h"
 
 namespace
@@ -51,13 +52,17 @@ void Tunnel::stop()
 
 void Tunnel::readFromTunnel()
 {
-	char buffer[BUFFER_SIZE];
+	uint8_t buffer[BUFFER_SIZE];
 
 	std::cout << "Reading..." << std::endl;
 
 	std::size_t bytesRead = read(m_fileDescriptor, buffer, BUFFER_SIZE);
 
-	std::cout << "Just read " << bytesRead << " bytes..." << std::endl;
+	UdpPacket packet(std::vector<uint8_t>(buffer, buffer+bytesRead));
+
+	std::string packetString;
+	packet.toString(packetString);
+	std::cout << packetString << std::endl;
 
 	m_ioService->post(std::bind(&Tunnel::readFromTunnel, this));
 }

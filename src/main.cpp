@@ -6,13 +6,28 @@
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 
-#include "include/version.h"
-#include "include/virtual_interface.h"
-#include "include/tunnel.h"
+#include "types.h"
+#include "version.h"
+#include "virtual_interface.h"
+#include "tunnel.h"
 
-void callback(std::shared_ptr<std::vector<boost::uint8_t> > buffer)
+#include "ip_packet.h"
+#include "udp_packet.h"
+
+#include "device_communicator/linux_device_communicator.h"
+
+void callback(Overpass::SharedBuffer buffer)
 {
-	std::cout << "Received " << buffer->size() << " bytes: " << buffer->data() << std::endl;
+	IpPacket packet(*buffer);
+
+	std::string packetString;
+	packet.toString(packetString);
+	std::cout << packetString << std::endl;
+
+	UdpPacket udpPacket(packet.payload());
+
+	udpPacket.toString(packetString);
+	std::cout << packetString << std::endl;
 }
 
 void parseParameters(
@@ -76,13 +91,39 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	Tunnel tunnel(interfaceFileDescriptor);
-	tunnel.start();
+	std::vector<std::thread> threadPool;
+	std::shared_ptr<boost::asio::io_service> ioService(new boost::asio::io_service);
+
+	std::shared_ptr<LinuxDeviceCommunicator> communicator(
+				new LinuxDeviceCommunicator(interfaceFileDescriptor));
+
+	Tunnel tunnel(ioService, callback, communicator);
+
+	// Make sure we have at least two threads
+	auto numberOfCores = std::max(static_cast<unsigned int>(2),
+								  std::thread::hardware_concurrency());
+
+	std::cout << "Firing up " << numberOfCores << " threads..." << std::endl;
+
+	for (unsigned int i = 0; i < numberOfCores; ++i)
+	{
+		threadPool.push_back(std::thread([ioService](){ioService->run();}));
+	}
 
 	int val;
 	std::cin >> val;
 
-	tunnel.stop();
+	std::cout << "Stopping..." << std::endl;
+
+	ioService->stop();
+
+	std::for_each(threadPool.begin(), threadPool.end(),
+				  [](std::thread &thread)
+	{
+		thread.join();
+	});
+
+	close(interfaceFileDescriptor);
 
 	return 0;
 }

@@ -2,83 +2,96 @@
 #include <iostream>
 #include <bitset>
 
-#include "include/ip_packet.h"
-#include "include/udp_packet.h"
-#include "include/tunnel.h"
+#include "tunnel.h"
 
 namespace
 {
 	const int BUFFER_SIZE = 1500; // 1500 bytes, standard MTU
 }
 
-Tunnel::Tunnel(int interfaceFileDescriptor) :
-	m_fileDescriptor(interfaceFileDescriptor),
-	m_ioService(new boost::asio::io_service)
+class TunnelPrivate
 {
+	public:
+		TunnelPrivate(const std::shared_ptr<boost::asio::io_service> &ioService,
+					  Tunnel::ReadCallback callback, const DeviceCommunicatorInterfacePtr &communicator);
+
+		void sendAsynchronously(Overpass::SharedBuffer buffer);
+
+	private:
+		void readFromTunnel();
+		void sendToTunnel(Overpass::SharedBuffer buffer);
+
+	private:
+		std::shared_ptr<boost::asio::io_service> m_ioService;
+		Tunnel::ReadCallback m_callback;
+		DeviceCommunicatorInterfacePtr m_communicator;
+};
+
+TunnelPrivate::TunnelPrivate(
+		const std::shared_ptr<boost::asio::io_service> &ioService,
+		Tunnel::ReadCallback callback, const DeviceCommunicatorInterfacePtr &communicator) :
+	m_ioService(ioService),
+	m_callback(callback),
+	m_communicator(communicator)
+{
+	// Start reading from file descriptor as soon as the IO service is running.
+	m_ioService->post(std::bind(&TunnelPrivate::readFromTunnel, this));
 }
 
-void Tunnel::start()
+void TunnelPrivate::sendAsynchronously(Overpass::SharedBuffer buffer)
 {
-	stop();
-
-	m_ioService.reset(new boost::asio::io_service);
-
-	// Ask IO service to begin reading (won't actually start until the thread
-	// pool is fired up, though)
-	m_ioService->post(std::bind(&Tunnel::readFromTunnel, this));
-
-	// Make sure we have at least two threads
-	auto numberOfCores = std::max(static_cast<unsigned int>(2),
-								  std::thread::hardware_concurrency());
-
-	std::cout << "Firing up " << numberOfCores << " threads..." << std::endl;
-
-	for (unsigned int i = 0; i < numberOfCores; ++i)
-	{
-		m_threadPool.push_back(std::thread([this](){this->m_ioService->run();}));
-	}
+	m_ioService->post(std::bind(&TunnelPrivate::sendToTunnel, this, buffer));
 }
 
-void Tunnel::stop()
-{
-	m_ioService->stop();
-
-	std::for_each(m_threadPool.begin(), m_threadPool.end(),
-				  [](std::thread &thread)
-	{
-		thread.join();
-	});
-
-	m_threadPool.clear();
-}
-
-void Tunnel::readFromTunnel()
+void TunnelPrivate::readFromTunnel()
 {
 	uint8_t buffer[BUFFER_SIZE];
 
-	std::cout << "Reading..." << std::endl;
+	// Read with a one-second timeout
+	auto bytesRead = m_communicator->read(buffer, BUFFER_SIZE, 1, 0);
 
-	std::size_t bytesRead = read(m_fileDescriptor, buffer, BUFFER_SIZE);
+	if (bytesRead > 0)
+	{
+		std::shared_ptr<std::vector<uint8_t> > sharedBuffer(new std::vector<uint8_t>(buffer, buffer+bytesRead));
 
-//	for (int i = 0; i < bytesRead; i+=5)
-//	{
-//		for (int j = 0; j < 5; ++j)
-//		{
-//			std::cout << static_cast<std::bitset<8> >(buffer[i+j]) << "(" << std::hex << (int) buffer[i+j] << ") ";
-//		}
-//		std::cout << std::endl;
-//	}
+		m_ioService->post(std::bind(m_callback, sharedBuffer));
+	}
+	else if (bytesRead < 0)
+	{
+		perror("Unable to read from tunnel");
+	}
 
-	IpPacket packet(std::vector<uint8_t>(buffer, buffer+bytesRead));
+	//	for (int i = 0; i < bytesRead; i+=5)
+	//	{
+	//		for (int j = 0; j < 5; ++j)
+	//		{
+	//			std::cout << static_cast<std::bitset<8> >(buffer[i+j]) << "(" << std::hex << (int) buffer[i+j] << ") ";
+	//		}
+	//		std::cout << std::endl;
+	//	}
 
-	std::string packetString;
-	packet.toString(packetString);
-	std::cout << packetString << std::endl;
+	m_ioService->post(std::bind(&TunnelPrivate::readFromTunnel, this));
+}
 
-	UdpPacket udpPacket(packet.payload());
+void TunnelPrivate::sendToTunnel(Overpass::SharedBuffer buffer)
+{
+	if (m_communicator->write(buffer->data(), buffer->size()) < 0)
+	{
+		perror("Unable to send to tunnel");
+	}
+}
 
-	udpPacket.toString(packetString);
-	std::cout << packetString << std::endl;
+Tunnel::Tunnel(std::shared_ptr<boost::asio::io_service> ioService,
+			   ReadCallback callback, const DeviceCommunicatorInterfacePtr &communicator) :
+	m_data(new TunnelPrivate(ioService, callback, communicator))
+{
+}
 
-	m_ioService->post(std::bind(&Tunnel::readFromTunnel, this));
+Tunnel::~Tunnel()
+{
+}
+
+void Tunnel::sendToTunnel(Overpass::SharedBuffer buffer)
+{
+	m_data->sendAsynchronously(buffer);
 }

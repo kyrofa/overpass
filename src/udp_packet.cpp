@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <sstream>
 
-#include "include/udp_packet.h"
+#include "udp_packet.h"
 
 namespace
 {

@@ -4,38 +4,33 @@
 #include <vector>
 #include <thread>
 #include <functional>
+#include <memory>
 
 #include <boost/asio/io_service.hpp>
 
-class Tunnel
+#include "types.h"
+#include "device_communicator/device_communicator_interface.h"
+
+class TunnelPrivate;
+
+class Tunnel: private boost::noncopyable
 {
 	public:
-		explicit Tunnel(int interfaceFileDescriptor);
+		typedef std::function<void (const Overpass::SharedBuffer&)> ReadCallback;
 
-		void start();
-		void stop();
+		Tunnel(std::shared_ptr<boost::asio::io_service> ioService,
+			   ReadCallback callback, const DeviceCommunicatorInterfacePtr &communicator);
 
-		//void send(const std::vector<std::uint8_t> &buffer);
+		/*!
+		 * \brief Tunnel destructor. Doesn't actually do anything-- exists so
+		 *        TunnelPrivate can be incomplete.
+		 */
+		~Tunnel();
+
+		void sendToTunnel(Overpass::SharedBuffer buffer);
 
 	private:
-		void readFromTunnel();
-
-	private:
-		/*!
-		 * \brief The file descriptor of the virtual network interface.
-		 */
-		int m_fileDescriptor;
-
-		/*!
-		 * \brief The IO service to run asynchronous tasks.
-		 */
-		std::shared_ptr<boost::asio::io_service> m_ioService;
-
-		/*!
-		 * \brief Thread pool for reading from/writing to virtual network
-		 *        interface.
-		 */
-		std::vector<std::thread> m_threadPool;
+		std::unique_ptr<TunnelPrivate> m_data;
 };
 
 #endif // TUNNEL_H

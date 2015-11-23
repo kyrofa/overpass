@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <sstream>
 
-#include "include/ip_packet.h"
+#include "ip_packet.h"
 
 namespace
 {

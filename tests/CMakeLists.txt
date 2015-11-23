@@ -13,6 +13,7 @@ include_directories(
 add_executable(main_tests
 	${PROJECT_SOURCE_DIR}/tests/src/packets/ip_packet_test.cpp
 	${PROJECT_SOURCE_DIR}/tests/src/packets/udp_packet_test.cpp
+	${PROJECT_SOURCE_DIR}/tests/src/tunnel_test.cpp
 	${PROJECT_SOURCE_DIR}/tests/src/main.cpp
 )
 

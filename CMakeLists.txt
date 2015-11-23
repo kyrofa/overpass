@@ -11,23 +11,28 @@ configure_file(
 	${PROJECT_BINARY_DIR}/include/version.h
 )
 
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_BINARY_DIR})
-
 find_package(Boost REQUIRED COMPONENTS
 	system
 	program_options
 )
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(
+	${PROJECT_SOURCE_DIR}/include
+	${PROJECT_BINARY_DIR}/include
+	${Boost_INCLUDE_DIRS}
+)
 
 set(OVERPASS_HEADERS
+	${PROJECT_SOURCE_DIR}/include/device_communicator/device_communicator_interface.h
+	${PROJECT_SOURCE_DIR}/include/device_communicator/linux_device_communicator.h
 	${PROJECT_SOURCE_DIR}/include/ip_packet.h
 	${PROJECT_SOURCE_DIR}/include/tunnel.h
+	${PROJECT_SOURCE_DIR}/include/types.h
 	${PROJECT_SOURCE_DIR}/include/udp_packet.h
 	${PROJECT_SOURCE_DIR}/include/virtual_interface.h
 )
 
 set(OVERPASS_SOURCES
+	${PROJECT_SOURCE_DIR}/src/device_communicator/linux_device_communicator.cpp
 	${PROJECT_SOURCE_DIR}/src/ip_packet.cpp
 	${PROJECT_SOURCE_DIR}/src/tunnel.cpp
 	${PROJECT_SOURCE_DIR}/src/udp_packet.cpp

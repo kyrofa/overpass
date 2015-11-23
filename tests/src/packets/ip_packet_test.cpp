@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "include/ip_packet.h"
+#include "ip_packet.h"
 
 // Verify that parsing a IP packet from a buffer works as expected.
 TEST(IpPacket, Parse)

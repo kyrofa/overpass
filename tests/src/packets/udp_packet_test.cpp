@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "include/udp_packet.h"
+#include "udp_packet.h"
 
 // Verify that parsing a UDP packet from a buffer works as expected.
 TEST(UdpPacket, Parse)

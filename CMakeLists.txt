@@ -7,8 +7,15 @@ set(VERSION_MINOR 0)
 set(VERSION_PATCH 0)
 
 configure_file(
-	${PROJECT_SOURCE_DIR}/include/version.h.in
+	${PROJECT_SOURCE_DIR}/data/version.h.in
 	${PROJECT_BINARY_DIR}/include/version.h
 )
 
 include_directories(${PROJECT_BINARY_DIR}/include)
+
+add_definitions("-std=c++11 -Wall -Wextra")
+
+set(BUILD_TESTS true CACHE BOOL "Whether or not to build the tests")
+if(BUILD_TESTS)
+	add_subdirectory(tests)
+endif()

@@ -3,7 +3,6 @@ add_executable(unit-tests
 )
 
 target_link_libraries(unit-tests
-	${Boost_LIBRARIES}
 	gmock
 	gmock_main
 )

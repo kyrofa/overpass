@@ -9,6 +9,25 @@ include_directories(
 	${GMOCK_INCLUDE_DIR}
 )
 
+# Custom target to generate the coverage information
+add_custom_target(generate-coverage-information
+	COMMAND lcov --directory ${PROJECT_BINARY_DIR} --capture --output-file ${PROJECT_BINARY_DIR}/coverage.info
+	DEPENDS test
+)
+
+# Custom target to filter the coverage information to only relevant files
+add_custom_target(filter-coverage-information
+	COMMAND lcov --remove ${PROJECT_BINARY_DIR}/coverage.info 'tests/*' '/usr/*' --output-file ${PROJECT_BINARY_DIR}/coverage.info
+	DEPENDS generate-coverage-information
+)
+
+# Custom target to actually display the coverage information
+add_custom_target(coverage
+	COMMAND lcov --list ${PROJECT_BINARY_DIR}/coverage.info
+	DEPENDS filter-coverage-information
+)
+
+# Custom target to run tests
 add_custom_target(test
 	DEPENDS run-unit-tests
 )

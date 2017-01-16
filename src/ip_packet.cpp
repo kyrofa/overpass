@@ -21,7 +21,7 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 	{
 		std::stringstream stream;
 		stream << "IP header is " << IP_HEADER_SIZE << " bytes, but buffer "
-			   << "is only "  << bufferSize << " bytes";
+		      << "is only "  << bufferSize << " bytes";
 		throw std::length_error(stream.str());
 	}
 
@@ -45,7 +45,7 @@ IpPacket::IpPacket(const std::vector<uint8_t> &buffer)
 	{
 		std::stringstream stream;
 		stream << "Buffer is " << bufferSize << " bytes, expected "
-			   << m_packetLength;
+		      << m_packetLength;
 		throw std::length_error(stream.str());
 	}
 

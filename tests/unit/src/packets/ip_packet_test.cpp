@@ -2,7 +2,7 @@
 
 #include "ip_packet.h"
 
-// Verify that parsing a IP packet from a buffer works as expected.
+// Verify that parsing an IP packet from a buffer works as expected.
 TEST(IpPacket, Parse)
 {
 	uint8_t version = 4; // IPv4
@@ -88,4 +88,76 @@ TEST(IpPacket, Parse)
 	EXPECT_EQ(destinationIpAddress, packet.destinationIpAddress());
 	EXPECT_EQ(options, packet.options());
 	EXPECT_EQ(payload, packet.payload());
+}
+
+// Verify that an exception is thrown if the buffer is too short to hold the
+// IP header.
+TEST(IpPacket, ParseTooShortForHeader)
+{
+	std::vector<uint8_t> buffer = {1}; // Size of 1, should be 20 for the header
+
+	ASSERT_THROW(IpPacket packet(buffer), std::length_error);
+}
+
+// Verify that an exception is thrown if the packet size is shorter than the
+// buffer.
+TEST(IpPacket, ParseStatedLengthTooShort)
+{
+	uint16_t packetLength = 20;
+
+	std::vector<uint8_t> buffer = {
+	   0,
+	   0,
+	   static_cast<uint8_t>(packetLength >> 8),
+	   static_cast<uint8_t>(packetLength & 0x00ff),
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	};
+
+	EXPECT_THROW(IpPacket packet(buffer), std::length_error);
+}
+
+TEST(IpPacket, ParseStatedLengthTooLong)
+{
+	uint16_t packetLength = 21;
+
+	std::vector<uint8_t> buffer = {
+	   0,
+	   0,
+	   static_cast<uint8_t>(packetLength >> 8),
+	   static_cast<uint8_t>(packetLength & 0x00ff),
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	   0,
+	};
+
+	EXPECT_THROW(IpPacket packet(buffer), std::length_error);
 }

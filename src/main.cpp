@@ -1,12 +1,14 @@
 #include <iostream>
+#include <thread>
 
 #include <boost/program_options.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/posix/stream_descriptor.hpp>
 
 #include <tins/ip.h>
 #include <tins/udp.h>
 
-#include "tunnel.h"
+#include "socket_communicator.h"
 #include "version.h"
 #include "virtual_interface.h"
 
@@ -79,9 +81,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	using boost::asio::posix::stream_descriptor;
 	std::shared_ptr<boost::asio::io_service> ioService(
 	         new boost::asio::io_service);
-	Overpass::Tunnel tunnel(ioService, callback, interfaceFileDescriptor);
+	std::shared_ptr<stream_descriptor> streamSocket(new stream_descriptor(*ioService));
+	streamSocket->assign(interfaceFileDescriptor);
+	auto communicator = Overpass::makeSocketCommunicator(
+	                       ioService, callback, streamSocket);
 
 	// Construct a signal set registered for process termination.
 	boost::asio::signal_set signal_set(*ioService, SIGINT, SIGTERM);
@@ -89,7 +95,7 @@ int main(int argc, char *argv[])
 	// Start an asynchronous wait for one of the signals to occur.
 	using boost::system::error_code;
 	signal_set.async_wait(
-	         [&ioService](const error_code& error, int signalNumber)
+	         [&ioService](const error_code& error, int /*signalNumber*/)
 	{
 		if (error)
 		{
@@ -113,11 +119,11 @@ int main(int argc, char *argv[])
 		threadPool.push_back(std::thread([ioService](){ioService->run();}));
 	}
 
+	// This will block, and the current thread will begin serving the IO service
+	// until it is stopped, at which time execution will resume here.
 	ioService->run();
 
 	std::cout << "Stopping..." << std::endl;
-
-	ioService->stop();
 
 	std::for_each(threadPool.begin(), threadPool.end(),
 	              [](std::thread &thread)

@@ -28,13 +28,12 @@ include_directories(
 )
 
 set(OVERPASS_HEADERS
-	${PROJECT_SOURCE_DIR}/include/tunnel.h
+	${PROJECT_SOURCE_DIR}/include/socket_communicator.h
 	${PROJECT_SOURCE_DIR}/include/types.h
 	${PROJECT_SOURCE_DIR}/include/virtual_interface.h
 )
 
 set(OVERPASS_SOURCES
-	${PROJECT_SOURCE_DIR}/src/tunnel.cpp
 	${PROJECT_SOURCE_DIR}/src/version.cpp
 	${PROJECT_SOURCE_DIR}/src/virtual_interface_implementations/linux.cpp
 )

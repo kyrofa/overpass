@@ -1,38 +1,41 @@
-#ifndef SOCKET_COMMUNICATOR_H
-#define SOCKET_COMMUNICATOR_H
+#ifndef STREAM_SERVER_H
+#define STREAM_SERVER_H
 
 #include <memory>
+#include <iostream>
 
 #include <boost/system/error_code.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include "types.h"
 
 namespace Overpass
 {
-	namespace internal
-	{
-		typedef std::function<void (const Overpass::SharedBuffer&)> ReadCallback;
-	}
+	typedef std::function<void (const SharedBuffer&)> ReadCallback;
 
 	template <typename T>
-	class SocketCommunicator;
+	class StreamServer;
 
 	template <typename T>
-	std::shared_ptr<SocketCommunicator<T>> makeSocketCommunicator(
+	std::shared_ptr<StreamServer<T>> makeStreamServer(
 	      const SharedIoService &ioService,
-	      internal::ReadCallback callback,
+	      ReadCallback callback,
 	      const std::shared_ptr<T> &socket,
 	      std::size_t bufferSize = 1500);
 
 	template <typename T>
-	class SocketCommunicator :
-	      public std::enable_shared_from_this<SocketCommunicator<T>>
+	using SharedStreamServer = std::shared_ptr<StreamServer<T>>;
+
+	template <typename T>
+	class StreamServer :
+	      public std::enable_shared_from_this<StreamServer<T>>
 	{
 		public:
-			SocketCommunicator(const SharedIoService &ioService,
-			                   internal::ReadCallback callback,
-			                   const std::shared_ptr<T> &socket,
-			                   std::size_t bufferSize = 1500):
+			StreamServer(const SharedIoService &ioService,
+			             ReadCallback callback,
+			             const std::shared_ptr<T> &socket,
+			             std::size_t bufferSize = 1500):
 			   m_ioService(ioService),
 			   m_callback(callback),
 			   m_bufferSize(bufferSize),
@@ -40,14 +43,19 @@ namespace Overpass
 			{
 			}
 
-			void send(const Overpass::SharedBuffer &buffer) const
+			void write(const Overpass::SharedBuffer &buffer) const
 			{
-				// Does nothing yet.
+				boost::asio::async_write(m_socket,
+				                         boost::asio::buffer(*buffer),
+				                         std::bind(&StreamServer::handleWrite,
+				                                   this->shared_from_this(),
+				                                   std::placeholders::_1,
+				                                   std::placeholders::_2));
 			}
 
-			friend std::shared_ptr<SocketCommunicator> makeSocketCommunicator<T>(
+			friend std::shared_ptr<StreamServer> makeStreamServer<T>(
 			      const SharedIoService &ioService,
-			      internal::ReadCallback callback,
+			      ReadCallback callback,
 			      const std::shared_ptr<T> &socket,
 			      std::size_t bufferSize);
 
@@ -58,7 +66,7 @@ namespace Overpass
 				Overpass::SharedBuffer buffer(new Overpass::Buffer(m_bufferSize));
 
 				m_socket->async_read_some(boost::asio::buffer(*buffer),
-				                          std::bind(&SocketCommunicator::handleRead,
+				                          std::bind(&StreamServer::handleRead,
 				                                    this->shared_from_this(),
 				                                    buffer,
 				                                    std::placeholders::_1,
@@ -71,7 +79,7 @@ namespace Overpass
 			{
 				if (error)
 				{
-					std::cerr << "Got error: " << error << std::endl;
+					std::cerr << "Error reading: " << error << std::endl;
 					return;
 				}
 
@@ -88,21 +96,35 @@ namespace Overpass
 				beginReading();
 			}
 
+			void handleWrite(const boost::system::error_code &error,
+			                 std::size_t bytesRead) const
+			{
+				if (error)
+				{
+					std::cerr << "Error writing: " << error << std::endl;
+				}
+
+				if (bytesRead == 0)
+				{
+					std::cerr << "Sent zero bytes?" << std::endl;
+				}
+			}
+
 		private:
 			SharedIoService m_ioService;
-			internal::ReadCallback m_callback;
+			ReadCallback m_callback;
 			std::size_t m_bufferSize;
 			std::shared_ptr<T> m_socket;
 	};
 
 	template <typename T>
-	std::shared_ptr<SocketCommunicator<T>> makeSocketCommunicator(
+	std::shared_ptr<StreamServer<T>> makeStreamServer(
 	      const SharedIoService &ioService,
-	      internal::ReadCallback callback,
+	      ReadCallback callback,
 	      const std::shared_ptr<T> &socket,
 	      std::size_t bufferSize)
 	{
-		auto communicator = std::make_shared<SocketCommunicator<T> >(
+		auto communicator = std::make_shared<StreamServer<T> >(
 		                       ioService, callback, socket, bufferSize);
 
 		// Ideally the constructor would do this, but it can't as shared_from_this
@@ -113,4 +135,4 @@ namespace Overpass
 	}
 }
 
-#endif // SOCKET_COMMUNICATOR_H
+#endif // STREAM_SERVER_H

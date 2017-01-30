@@ -7,8 +7,10 @@
 
 #include <tins/ip.h>
 #include <tins/udp.h>
+#include <tins/rawpdu.h>
 
-#include "socket_communicator.h"
+#include "stream_server.h"
+#include "overpass_server.h"
 #include "version.h"
 #include "virtual_interface.h"
 
@@ -34,6 +36,18 @@ void callback(const Overpass::SharedBuffer &buffer)
 	Tins::IP ipPacket(buffer->data(), buffer->size());
 	const Tins::UDP &udpPacket = ipPacket.rfind_pdu<Tins::UDP>();
 	std::cout << "[UDP PACKET]" << std::endl;
+	std::cout << "Source port:\t" << udpPacket.sport() << std::endl;
+	std::cout << "Destination port:\t" << udpPacket.dport() << std::endl;
+	std::cout << "Packet length:\t" << udpPacket.length() << std::endl;
+	std::cout << "Checksum:\t" << udpPacket.checksum() << std::endl;
+}
+
+void callback2(const boost::asio::ip::udp::endpoint &sender,
+               const Overpass::SharedBuffer &buffer)
+{
+	Tins::RawPDU raw(buffer->data(), buffer->size());
+	Tins::UDP udpPacket = raw.to<Tins::UDP>();
+	std::cout << "[UDP PACKET FROM OUTSIDE]" << std::endl;
 	std::cout << "Source port:\t" << udpPacket.sport() << std::endl;
 	std::cout << "Destination port:\t" << udpPacket.dport() << std::endl;
 	std::cout << "Packet length:\t" << udpPacket.length() << std::endl;
@@ -86,8 +100,10 @@ int main(int argc, char *argv[])
 	         new boost::asio::io_service);
 	std::shared_ptr<stream_descriptor> streamSocket(new stream_descriptor(*ioService));
 	streamSocket->assign(interfaceFileDescriptor);
-	auto communicator = Overpass::makeSocketCommunicator(
+	auto streamServer = Overpass::makeStreamServer(
 	                       ioService, callback, streamSocket);
+
+	Overpass::OverpassServer overpassServer(ioService, "127.0.0.1", 4200, callback2);
 
 	// Construct a signal set registered for process termination.
 	boost::asio::signal_set signal_set(*ioService, SIGINT, SIGTERM);

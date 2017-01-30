@@ -28,12 +28,14 @@ include_directories(
 )
 
 set(OVERPASS_HEADERS
-	${PROJECT_SOURCE_DIR}/include/socket_communicator.h
+	${PROJECT_SOURCE_DIR}/include/overpass_server.h
+	${PROJECT_SOURCE_DIR}/include/stream_server.h
 	${PROJECT_SOURCE_DIR}/include/types.h
 	${PROJECT_SOURCE_DIR}/include/virtual_interface.h
 )
 
 set(OVERPASS_SOURCES
+	${PROJECT_SOURCE_DIR}/src/overpass_server.cpp
 	${PROJECT_SOURCE_DIR}/src/version.cpp
 	${PROJECT_SOURCE_DIR}/src/virtual_interface_implementations/linux.cpp
 )

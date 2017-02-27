@@ -17,6 +17,9 @@ find_package(Boost REQUIRED COMPONENTS
 	system
 )
 
+find_package(PkgConfig REQUIRED)
+pkg_search_module(LIBUPNP REQUIRED libupnp)
+
 # Overpass uses libtins for packet processing.
 find_package(libtins REQUIRED)
 
@@ -25,23 +28,34 @@ include_directories(
 	${PROJECT_BINARY_DIR}/include
 	${Boost_INCLUDE_DIRS}
 	${LIBTINS_INCLUDE_DIRS}
+	${LIBUPNP_INCLUDE_DIRS}
 )
 
 set(OVERPASS_HEADERS
 	${PROJECT_SOURCE_DIR}/include/datagram_server.h
 	${PROJECT_SOURCE_DIR}/include/internal/datagram_server_private.h
 	${PROJECT_SOURCE_DIR}/include/internal/overpass_server_private.h
+	${PROJECT_SOURCE_DIR}/include/internal/upnp_objects/device.h
+	${PROJECT_SOURCE_DIR}/include/internal/upnp_objects/service.h
+	${PROJECT_SOURCE_DIR}/include/internal/upnp_objects/xml_parsing.h
+	${PROJECT_SOURCE_DIR}/include/internal/upnp_port_mapper_private.h
 	${PROJECT_SOURCE_DIR}/include/overpass_server.h
 	${PROJECT_SOURCE_DIR}/include/router.h
 	${PROJECT_SOURCE_DIR}/include/stream_server.h
 	${PROJECT_SOURCE_DIR}/include/types.h
+	${PROJECT_SOURCE_DIR}/include/upnp_port_mapper.h
 	${PROJECT_SOURCE_DIR}/include/virtual_interface.h
 )
 
 set(OVERPASS_SOURCES
 	${PROJECT_SOURCE_DIR}/src/internal/overpass_server_private.cpp
+	${PROJECT_SOURCE_DIR}/src/internal/upnp_objects/device.cpp
+	${PROJECT_SOURCE_DIR}/src/internal/upnp_objects/service.cpp
+	${PROJECT_SOURCE_DIR}/src/internal/upnp_objects/xml_parsing.cpp
+	${PROJECT_SOURCE_DIR}/src/internal/upnp_port_mapper_private.cpp
 	${PROJECT_SOURCE_DIR}/src/overpass_server.cpp
 	${PROJECT_SOURCE_DIR}/src/router.cpp
+	${PROJECT_SOURCE_DIR}/src/upnp_port_mapper.cpp
 	${PROJECT_SOURCE_DIR}/src/version.cpp
 	${PROJECT_SOURCE_DIR}/src/virtual_interface_implementations/linux.cpp
 )
@@ -55,6 +69,8 @@ add_library(overpass SHARED
 
 target_link_libraries(overpass
 	${LIBTINS_LIBRARIES}
+	${LIBUPNP_LIBRARIES}
+	${Boost_LIBRARIES}
 )
 
 add_executable(overpassd
@@ -63,7 +79,6 @@ add_executable(overpassd
 
 target_link_libraries(overpassd
 	overpass
-	${Boost_LIBRARIES}
 	pthread
 )
 

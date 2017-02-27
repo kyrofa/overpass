@@ -8,6 +8,7 @@
 
 #include "version.h"
 #include "overpass_server.h"
+#include "upnp_port_mapper.h"
 
 void parseParameters(
       int argc, char *argv[],
@@ -113,6 +114,8 @@ int main(int argc, char *argv[])
 		std::cout << "No known clients... Overpass functionality will be "
 		          << "limited." << std::endl;
 	}
+
+	Overpass::UpnpPortMapper portMapper(ioService, 14358);
 
 	// Construct a signal set registered for process termination.
 	boost::asio::signal_set signal_set(*ioService, SIGINT, SIGTERM);
